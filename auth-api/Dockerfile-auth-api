@@ -1,37 +1,25 @@
-# Use the official Go image for building
-FROM golang:1.21 AS builder
+# Use official Golang image as the base
+FROM golang:1.20-alpine AS builder
 
-# Set the working directory inside the container
+# Set working directory inside container
 WORKDIR /app
 
-# Copy go.mod and go.sum files first for dependency caching
-COPY go.mod go.sum ./
+# Copy the source code
+COPY main.go .
 
-# Download dependencies
-RUN go mod download
+# Build the Go application
+RUN go mod init auth-api && \
+    go mod tidy && \
+    go build -o auth-api main.go
 
-# Copy the rest of the application source code
-COPY . .
+# Use a lightweight base image for the final stage
+FROM alpine:latest
 
-# Build the application binary
-RUN go build -o auth-api
+# Copy the compiled binary from the builder stage
+COPY --from=builder /app/auth-api /auth-api
 
-# Use a smaller base image for the final container
-FROM gcr.io/distroless/base-debian11
-
-# Set the working directory
-WORKDIR /app
-
-# Copy the built binary from the builder stage
-COPY --from=builder /app/auth-api .
-
-# Expose the port used by the auth-api
+# Expose the required port
 EXPOSE 8081
 
-# Set environment variables (these can also be overridden by Docker Compose)
-ENV AUTH_API_PORT=8081
-ENV USERS_API_ADDRESS=http://users-api:8083
-ENV JWT_SECRET=myfancysecret
-
 # Run the application
-CMD ["./auth-api"]
+ENTRYPOINT ["/auth-api"]

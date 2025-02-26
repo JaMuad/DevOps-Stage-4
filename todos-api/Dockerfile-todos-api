@@ -1,27 +1,18 @@
-# Use the official Node.js 8 image
-FROM node:8
+# Use Python as the base image
+FROM python:3.11-alpine
 
-# Set the working directory inside the container
+# Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json first for dependency caching
-COPY package*.json ./
+# Copy the application code and dependencies
+COPY main.py .
+COPY requirement.txt .
 
-# Install dependencies
-RUN npm install
+# Install required Python packages
+RUN pip install --no-cache-dir -r requirement.txt
 
-# Copy the rest of the application source code
-COPY . .
+# Expose the required port if necessary (optional)
+# EXPOSE 8084
 
-# Expose the port the todos-api will run on
-EXPOSE 8082
-
-# Set environment variables (can be overridden in docker-compose.yml)
-ENV TODO_API_PORT=8082
-ENV JWT_SECRET=myfancysecret
-ENV REDIS_HOST=redis-queue
-ENV REDIS_PORT=6379
-ENV REDIS_CHANNEL=log_channel
-
-# Run the application
-CMD ["npm", "start"]
+# Start the log message processor
+CMD ["python", "main.py"]
