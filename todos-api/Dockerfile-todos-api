@@ -1,18 +1,20 @@
-# Use Python as the base image
-FROM python:3.11-alpine
+# Use Node.js as the base image
+FROM node:20-alpine
 
 # Set working directory
 WORKDIR /app
 
-# Copy the application code and dependencies
-COPY main.py .
-COPY requirement.txt .
+# Copy package.json and package-lock.json
+COPY package.json package-lock.json ./
 
-# Install required Python packages
-RUN pip install --no-cache-dir -r requirement.txt
+# Install dependencies
+RUN npm install
 
-# Expose the required port if necessary (optional)
-# EXPOSE 8084
+# Copy the rest of the application code
+COPY . .
 
-# Start the log message processor
-CMD ["python", "main.py"]
+# Expose the required port
+EXPOSE 8082
+
+# Start the todos API
+CMD ["node", "server.js"]

@@ -1,25 +1,32 @@
-# Use official Golang image as the base
-FROM golang:1.20-alpine AS builder
+# Use Go 1.21.1 as the base image
+FROM golang:1.21.1-alpine AS builder
 
-# Set working directory inside container
+# Set working directory
 WORKDIR /app
 
-# Copy the source code
-COPY main.go .
+# Copy the Go module files
+COPY go.mod go.sum ./
 
-# Build the Go application
-RUN go mod init auth-api && \
-    go mod tidy && \
-    go build -o auth-api main.go
+# Download dependencies
+RUN go mod download
 
-# Use a lightweight base image for the final stage
+# Copy all .go files into the container
+COPY *.go ./
+
+# Build the application
+RUN go build -o auth-api main.go
+
+# Use a smaller base image for the final runtime
 FROM alpine:latest
 
-# Copy the compiled binary from the builder stage
-COPY --from=builder /app/auth-api /auth-api
+# Set working directory
+WORKDIR /app
+
+# Copy the built binary from the builder stage
+COPY --from=builder /app/auth-api .
 
 # Expose the required port
 EXPOSE 8081
 
-# Run the application
-ENTRYPOINT ["/auth-api"]
+# Start the auth-api application
+CMD ["./auth-api"]

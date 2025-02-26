@@ -1,15 +1,23 @@
-# Use Node.js as the base image
-FROM node:20-alpine
+# Use a stable Node.js version
+FROM node:18-alpine
 
 # Set working directory
 WORKDIR /app
 
-# Copy frontend source code
-COPY src/ ./src
+# Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Install dependencies and build
-RUN npm install && npm run build
+# Install build tools
+RUN apk add --no-cache python3 make g++
+
+# Clear npm cache and install dependencies
+RUN npm cache clean --force && npm install
+
+# Copy the rest of the application code
+COPY . .
+
+# Build the frontend
+RUN npm run build
 
 # Expose the frontend port
 EXPOSE 8080
