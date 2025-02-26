@@ -1,15 +1,18 @@
 version: "3.9"
-
 services:
   traefik:
-    image: traefik:v3.0
+    image: traefik:v2.10  # Downgraded to a more stable version
     container_name: traefik
     restart: always
     command:
+      - "--log.level=DEBUG"  # Added debug logging
       - "--api.insecure=true"
       - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"  # Explicitly disable exposure by default
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"  # Auto redirect HTTP to HTTPS
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
       - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
       - "--certificatesresolvers.myresolver.acme.email=${EMAIL}"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
@@ -20,13 +23,19 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./letsencrypt:/letsencrypt"
     labels:
-    - "traefik.http.routers.redirect-www.rule=Host(`www.${DOMAIN_NAME}`)"
-    - "traefik.http.routers.redirect-www.entrypoints=web"
-    - "traefik.http.routers.redirect-www.middlewares=redirect-to-root"
-    - "traefik.http.middlewares.redirect-to-root.redirectscheme.scheme=https"
-    - "traefik.http.middlewares.redirect-to-root.redirectscheme.permanent=true"
-    - "traefik.http.routers.redirect-www.tls.certresolver=myresolver"
-
+      - "traefik.enable=true"
+      # Dashboard for debugging
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls.certresolver=myresolver"
+      # WWW redirection
+      - "traefik.http.routers.redirect-www.rule=Host(`www.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.redirect-www.entrypoints=websecure"
+      - "traefik.http.routers.redirect-www.tls.certresolver=myresolver"
+      - "traefik.http.middlewares.redirect-to-root.redirectregex.regex=^https://www\\.(.*)$$"
+      - "traefik.http.middlewares.redirect-to-root.redirectregex.replacement=https://$$1"
+      - "traefik.http.routers.redirect-www.middlewares=redirect-to-root@docker"
 
   frontend:
     build:
@@ -36,6 +45,13 @@ services:
     restart: always
     environment:
       - PORT=8080
+      - AUTH_API_ADDRESS=http://auth-api:8081
+      - TODOS_API_ADDRESS=http://todos-api:8082
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`${DOMAIN_NAME}`)"
@@ -53,6 +69,14 @@ services:
       - AUTH_API_PORT=8081
       - USERS_API_ADDRESS=${USERS_API_ADDRESS}
       - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - users-api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.auth-api.rule=Host(`auth.${DOMAIN_NAME}`)"
@@ -72,6 +96,14 @@ services:
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
       - REDIS_CHANNEL=${REDIS_CHANNEL}
+    depends_on:
+      - redis-queue
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.todos-api.rule=Host(`todos.${DOMAIN_NAME}`)"
@@ -88,6 +120,12 @@ services:
     environment:
       - SERVER_PORT=8083
       - JWT_SECRET=${JWT_SECRET}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.users-api.rule=Host(`users.${DOMAIN_NAME}`)"
@@ -105,11 +143,18 @@ services:
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
       - REDIS_CHANNEL=${REDIS_CHANNEL}
+    depends_on:
+      - redis-queue
 
   redis-queue:
     image: redis:alpine
     container_name: redis-queue
     restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 networks:
   default:
