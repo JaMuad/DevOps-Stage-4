@@ -1,0 +1,22 @@
+# Use the official Python image
+FROM python:3.9-slim
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the requirements.txt and install dependencies
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the rest of the application source code
+COPY . .
+
+# Expose the port for Redis communication (though it listens, it doesn't expose a web port)
+# ENV Configuration (can also be overridden in docker-compose.yml)
+ENV REDIS_HOST=redis-queue
+ENV REDIS_PORT=6379
+ENV REDIS_CHANNEL=log_channel
+
+# Run the application
+CMD ["python3", "main.py"]

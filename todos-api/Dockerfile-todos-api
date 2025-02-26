@@ -1,0 +1,27 @@
+# Use the official Node.js 8 image
+FROM node:8
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy package.json and package-lock.json first for dependency caching
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy the rest of the application source code
+COPY . .
+
+# Expose the port the todos-api will run on
+EXPOSE 8082
+
+# Set environment variables (can be overridden in docker-compose.yml)
+ENV TODO_API_PORT=8082
+ENV JWT_SECRET=myfancysecret
+ENV REDIS_HOST=redis-queue
+ENV REDIS_PORT=6379
+ENV REDIS_CHANNEL=log_channel
+
+# Run the application
+CMD ["npm", "start"]

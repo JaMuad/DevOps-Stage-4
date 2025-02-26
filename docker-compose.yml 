@@ -1,0 +1,94 @@
+version: "3.9"
+
+services:
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: always
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile-frontend
+    container_name: frontend
+    restart: always
+    environment:
+      - PORT=8080
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN_NAME}`, `www.${DOMAIN_NAME}`)"
+      - "traefik.http.middlewares.redirect-to-root.redirectregex.regex=^https?://www.${DOMAIN_NAME}/(.*)"
+      - "traefik.http.middlewares.redirect-to-root.redirectregex.replacement=https://${DOMAIN_NAME}/$${1}"
+      - "traefik.http.middlewares.redirect-to-root.redirectregex.permanent=true"
+      - "traefik.http.routers.frontend.middlewares=redirect-to-root"
+      - "traefik.http.services.frontend.loadbalancer.server.port=8080"
+
+  auth-api:
+    build:
+      context: ./auth-api
+      dockerfile: Dockerfile-auth-api
+    container_name: auth-api
+    restart: always
+    environment:
+      - AUTH_API_PORT=8081
+      - USERS_API_ADDRESS=http://users-api:8083
+      - JWT_SECRET=myfancysecret
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth-api.rule=Host(`auth.${DOMAIN_NAME}`) || PathPrefix(`/api/auth`)"
+      - "traefik.http.services.auth-api.loadbalancer.server.port=8081"
+
+  todos-api:
+    build:
+      context: ./todos-api
+      dockerfile: Dockerfile-todos-api
+    container_name: todos-api
+    restart: always
+    environment:
+      - TODO_API_PORT=8082
+      - JWT_SECRET=myfancysecret
+      - REDIS_HOST=redis-queue
+      - REDIS_PORT=6379
+      - REDIS_CHANNEL=log_channel
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.todos-api.rule=Host(`todos.${DOMAIN_NAME}`) || PathPrefix(`/api/todos`)"
+      - "traefik.http.services.todos-api.loadbalancer.server.port=8082"
+
+  users-api:
+    build:
+      context: ./users-api
+    dockerfile: Dockerfile-users-api
+    container_name: users-api
+    restart: always
+    environment:
+      - SERVER_PORT=8083
+      - JWT_SECRET=myfancysecret
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.users-api.rule=Host(`users.${DOMAIN_NAME}`) || PathPrefix(`/api/users`)"
+      - "traefik.http.services.users-api.loadbalancer.server.port=8083"
+
+  log-message-processor:
+    build:
+      context: ./log-message-processor
+      dockerfile: Dockerfile-log-message-processor
+    container_name: log-message-processor
+    restart: always
+    environment:
+      - REDIS_HOST=redis-queue
+      - REDIS_PORT=6379
+      - REDIS_CHANNEL=log_channel
+
+  redis-queue:
+    image: redis:alpine
+    container_name: redis-queue
+    restart: always
