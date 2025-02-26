@@ -10,11 +10,11 @@ COPY go.mod go.sum ./
 # Download dependencies
 RUN go mod download
 
-# Copy all .go files into the container
-COPY *.go ./
+# Copy all source files into the container
+COPY . .
 
 # Build the application
-RUN go build -o auth-api main.go
+RUN go build -o auth-api .
 
 # Use a smaller base image for the final runtime
 FROM alpine:latest
