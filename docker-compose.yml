@@ -9,11 +9,22 @@ services:
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=${EMAIL}"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
     ports:
       - "80:80"
+      - "443:443"
     volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
     labels:
+      # Redirect www to non-www with HTTPS
+      - "traefik.http.routers.redirect-www.rule=Host(`www.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.redirect-www.entrypoints=web"
+      - "traefik.http.routers.redirect-www.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
       - "traefik.http.middlewares.redirect-to-root.redirectregex.regex=^https?://www.$${DOMAIN_NAME}/(.*)"
       - "traefik.http.middlewares.redirect-to-root.redirectregex.replacement=https://$${DOMAIN_NAME}/$$1"
       - "traefik.http.middlewares.redirect-to-root.redirectregex.permanent=true"
@@ -28,8 +39,9 @@ services:
       - PORT=8080
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN_NAME}`, `www.${DOMAIN_NAME}`)"
-      - "traefik.http.routers.frontend.middlewares=redirect-to-root"
+      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN_NAME}`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=myresolver"
       - "traefik.http.services.frontend.loadbalancer.server.port=8080"
 
   auth-api:
@@ -44,7 +56,9 @@ services:
       - JWT_SECRET=${JWT_SECRET}
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.auth-api.rule=Host(`auth.${DOMAIN_NAME}`) || PathPrefix(`/api/auth`)"
+      - "traefik.http.routers.auth-api.rule=Host(`auth.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.auth-api.entrypoints=websecure"
+      - "traefik.http.routers.auth-api.tls.certresolver=myresolver"
       - "traefik.http.services.auth-api.loadbalancer.server.port=8081"
 
   todos-api:
@@ -61,7 +75,9 @@ services:
       - REDIS_CHANNEL=${REDIS_CHANNEL}
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.todos-api.rule=Host(`todos.${DOMAIN_NAME}`) || PathPrefix(`/api/todos`)"
+      - "traefik.http.routers.todos-api.rule=Host(`todos.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.todos-api.entrypoints=websecure"
+      - "traefik.http.routers.todos-api.tls.certresolver=myresolver"
       - "traefik.http.services.todos-api.loadbalancer.server.port=8082"
 
   users-api:
@@ -75,7 +91,9 @@ services:
       - JWT_SECRET=${JWT_SECRET}
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.users-api.rule=Host(`users.${DOMAIN_NAME}`) || PathPrefix(`/api/users`)"
+      - "traefik.http.routers.users-api.rule=Host(`users.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.users-api.entrypoints=websecure"
+      - "traefik.http.routers.users-api.tls.certresolver=myresolver"
       - "traefik.http.services.users-api.loadbalancer.server.port=8083"
 
   log-message-processor:
