@@ -20,14 +20,13 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./letsencrypt:/letsencrypt"
     labels:
-      # Redirect www to non-www with HTTPS
-      - "traefik.http.routers.redirect-www.rule=Host(`www.${DOMAIN_NAME}`)"
-      - "traefik.http.routers.redirect-www.entrypoints=web"
-      - "traefik.http.routers.redirect-www.middlewares=redirect-to-https"
-      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
-      - "traefik.http.middlewares.redirect-to-root.redirectregex.regex=^https?://www.$${DOMAIN_NAME}/(.*)"
-      - "traefik.http.middlewares.redirect-to-root.redirectregex.replacement=https://$${DOMAIN_NAME}/$$1"
-      - "traefik.http.middlewares.redirect-to-root.redirectregex.permanent=true"
+    - "traefik.http.routers.redirect-www.rule=Host(`www.${DOMAIN_NAME}`)"
+    - "traefik.http.routers.redirect-www.entrypoints=web"
+    - "traefik.http.routers.redirect-www.middlewares=redirect-to-root"
+    - "traefik.http.middlewares.redirect-to-root.redirectscheme.scheme=https"
+    - "traefik.http.middlewares.redirect-to-root.redirectscheme.permanent=true"
+    - "traefik.http.routers.redirect-www.tls.certresolver=myresolver"
+
 
   frontend:
     build:
@@ -111,3 +110,8 @@ services:
     image: redis:alpine
     container_name: redis-queue
     restart: always
+
+networks:
+  default:
+    name: traefik-network
+    driver: bridge
