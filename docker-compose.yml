@@ -30,8 +30,6 @@ services:
       - "traefik.http.routers.redirect-www.rule=Host(`www.${DOMAIN_NAME}`)"
       - "traefik.http.routers.redirect-www.entrypoints=websecure"
       - "traefik.http.routers.redirect-www.tls.certresolver=myresolver"
-      # - "traefik.http.middlewares.redirect-to-root.redirectregex.regex=^https://www\\.(.*)$$"
-      # - "traefik.http.middlewares.redirect-to-root.redirectregex.replacement=https://$$1"
       - "traefik.http.routers.redirect-www.middlewares=redirect-to-root@docker"
 
   frontend:
@@ -46,7 +44,7 @@ services:
       - TODOS_API_ADDRESS=http://todos-api:8082
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN_NAME}`)"
+      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN_NAME}`) && !PathPrefix(`/api`)"
       - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.routers.frontend.tls.certresolver=myresolver"
       - "traefik.http.services.frontend.loadbalancer.server.port=8080"
@@ -65,7 +63,7 @@ services:
       - users-api
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.auth-api.rule=Host(`auth.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.auth-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/auth`)"
       - "traefik.http.routers.auth-api.entrypoints=websecure"
       - "traefik.http.routers.auth-api.tls.certresolver=myresolver"
       - "traefik.http.services.auth-api.loadbalancer.server.port=8081"
@@ -86,7 +84,7 @@ services:
       - redis-queue
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.todos-api.rule=Host(`todos.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.todos-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/todos`)"
       - "traefik.http.routers.todos-api.entrypoints=websecure"
       - "traefik.http.routers.todos-api.tls.certresolver=myresolver"
       - "traefik.http.services.todos-api.loadbalancer.server.port=8082"
@@ -102,7 +100,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.users-api.rule=Host(`users.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.users-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api/users`)"
       - "traefik.http.routers.users-api.entrypoints=websecure"
       - "traefik.http.routers.users-api.tls.certresolver=myresolver"
       - "traefik.http.services.users-api.loadbalancer.server.port=8083"
