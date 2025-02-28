@@ -30,8 +30,8 @@ services:
       - "traefik.http.routers.redirect-www.rule=Host(`www.${DOMAIN_NAME}`)"
       - "traefik.http.routers.redirect-www.entrypoints=websecure"
       - "traefik.http.routers.redirect-www.tls.certresolver=myresolver"
-      - "traefik.http.middlewares.redirect-to-root.redirectregex.regex=^https://www\\.(.*)$$"
-      - "traefik.http.middlewares.redirect-to-root.redirectregex.replacement=https://$$1"
+      # - "traefik.http.middlewares.redirect-to-root.redirectregex.regex=^https://www\\.(.*)$$"
+      # - "traefik.http.middlewares.redirect-to-root.redirectregex.replacement=https://$$1"
       - "traefik.http.routers.redirect-www.middlewares=redirect-to-root@docker"
 
   frontend:
