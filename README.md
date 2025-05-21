@@ -1,4 +1,4 @@
-# HNG12 DevOps Stage4 Task
+# Dockerfile & Docker Compose Set up
 
 This Repo Contains the code for a microservice application comprising of several components communicating to each other. In other words, this is an example of microservice. These microservices are written in different languages.
 

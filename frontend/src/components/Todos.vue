@@ -1,6 +1,6 @@
 <template>
   <div class="dashboard-page">
-    <div class="hng-brand">HNG.TECH</div>
+    <div class="aws-brand">aws.TECH</div>
     <app-nav></app-nav>
     <div class='container'>
       <spinner v-show='isProcessing' message='Processing...'></spinner>
@@ -8,7 +8,7 @@
         <div class="row align-items-center">
           <div class="col-sm-12">
             <h1 class="dashboard-title">
-              Welcome to HNG12 TODOs Dashboard
+              Welcome to aws12 TODOs Dashboard
               <transition name="fade">
                 <small v-if="total" class="task-count">({{ total }})</small>
               </transition>
@@ -144,7 +144,7 @@ export default {
     position: relative;
 }
 
-.hng-brand {
+.aws-brand {
     position: fixed;
     top: 20px;
     right: 30px;

@@ -12,7 +12,7 @@ import (
 
 var allowedUserHashes = map[string]interface{}{
 	"admin_Admin123": nil,
-	"hng_HngTech":   nil,
+	"aws_awsTech":   nil,
 	"user_Password":   nil,
 }
 

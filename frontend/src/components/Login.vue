@@ -1,12 +1,12 @@
 <template>
     <div class="login-page">
-        <div class="hng-brand">HNG.TECH</div>
+        <div class="aws-brand">aws.TECH</div>
         <div class="container">
             <spinner v-show="loggingIn" message="Logging in..."></spinner>
             <form class="form-horizontal login-form" role="form" v-on:submit.prevent="doLogin">
                 <div class="row text-center">
                     <div class="col-md-12">
-                        <h2>Welcome to HNG12 DevOps Stage Three Task</h2>
+                        <h2>Welcome to aws12 DevOps Stage Three Task</h2>
                         <hr class="custom-hr" />
                     </div>
                 </div>
@@ -112,7 +112,7 @@ export default {
     position: relative;
 }
 
-.hng-brand {
+.aws-brand {
     position: fixed;
     top: 20px;
     right: 30px;
